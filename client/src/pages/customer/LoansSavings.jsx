@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import Loader from '../../components/common/Loader';
-import { PiggyBank, Landmark, Percent, DollarSign } from 'lucide-react';
+import { PiggyBank, Landmark, Percent, X } from 'lucide-react';
 import { useModal } from '../../context/ModalContext';
 
 const LoansSavings = () => {
@@ -11,6 +12,9 @@ const LoansSavings = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { showAlert, showConfirm } = useModal();
+
+  const [selectedLoan, setSelectedLoan] = useState(null);
+  const [selectedDeposit, setSelectedDeposit] = useState(null);
 
   // Loan Request State
   const [loanAmount, setLoanAmount] = useState('');
@@ -114,13 +118,13 @@ const LoansSavings = () => {
         
         {/* LOANS SECTION */}
         <div className="flex flex-col gap-6">
-          <div className="glass-card p-6">
+          <div className="glass-card p-6 border-t-4 border-t-[#818cf8]">
             <h3 className="flex items-center gap-2 mb-6 text-[#818cf8]"><Landmark size={20} /> Request a Loan</h3>
             <form onSubmit={handleRequestLoan} className="flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Amount (ILS)</label>
                 <div className="relative">
-                  <DollarSign size={16} className="absolute left-3 top-3 text-slate-400" />
+                  <span className="absolute left-3 top-2 text-slate-400 font-bold text-lg">₪</span>
                   <input 
                     type="number" 
                     className="input-field pl-9" 
@@ -175,20 +179,23 @@ const LoansSavings = () => {
                   <p className="text-muted text-sm text-center py-4">No loan history.</p>
                 ) : (
                   loans.map(loan => (
-                    <div key={loan.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center">
+                    <div 
+                      key={loan.id} 
+                      onClick={() => setSelectedLoan(loan)}
+                      className="p-3 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-colors"
+                    >
                       <div>
                         <p className="font-semibold text-white">{formatCurrency(loan.amount)}</p>
-                        <p className="text-xs text-slate-400">{loan.purpose} • {loan.term_months} Months</p>
+                        <p className="text-xs text-slate-400">{formatDate(loan.created_at)}</p>
                       </div>
-                      <div className="text-right">
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded capitalize ${
                           loan.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
                           loan.status === 'rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 
                           'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                         }`}>
                           {loan.status}
                         </span>
-                        <p className="text-xs text-slate-500 mt-1">{formatDate(loan.created_at)}</p>
                       </div>
                     </div>
                   ))
@@ -206,7 +213,7 @@ const LoansSavings = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Deposit Amount (ILS)</label>
                 <div className="relative">
-                  <DollarSign size={16} className="absolute left-3 top-3 text-slate-400" />
+                  <span className="absolute left-3 top-2 text-slate-400 font-bold text-lg">₪</span>
                   <input 
                     type="number" 
                     className="input-field pl-9" 
@@ -250,33 +257,23 @@ const LoansSavings = () => {
                   <p className="text-muted text-sm text-center py-4">No active savings deposits.</p>
                 ) : (
                   deposits.map(dep => (
-                    <div key={dep.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex flex-col gap-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold text-white text-lg">{formatCurrency(dep.amount)}</p>
-                          <p className="text-xs text-[#34d399] font-medium flex items-center gap-1">
-                            <Percent size={12} /> {dep.interest_rate}% APY
-                          </p>
-                        </div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded capitalize ${
+                    <div 
+                      key={dep.id} 
+                      onClick={() => setSelectedDeposit(dep)}
+                      className="p-3 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center cursor-pointer hover:bg-white/10 transition-colors"
+                    >
+                      <div>
+                        <p className="font-semibold text-white">{formatCurrency(dep.amount)}</p>
+                        <p className="text-xs text-slate-400">{formatDate(dep.created_at)}</p>
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded capitalize ${
                           dep.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
                           dep.status === 'matured' ? 'bg-indigo-500/20 text-indigo-400' : 
                           'bg-red-500/20 text-red-400'
                         }`}>
                           {dep.status}
                         </span>
-                      </div>
-                      
-                      <div className="text-xs text-slate-400 flex justify-between items-center pt-2 border-t border-white/10">
-                        <span>Matures: {formatDate(dep.maturity_date)}</span>
-                        {dep.status === 'active' && (
-                          <button 
-                            onClick={() => handleBreakDeposit(dep.id)}
-                            className="text-red-400 hover:text-red-300 font-semibold"
-                          >
-                            Break Early
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))
@@ -285,8 +282,130 @@ const LoansSavings = () => {
             )}
           </div>
         </div>
-
       </div>
+
+      {/* Selected Loan Modal */}
+      {selectedLoan && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#0f172a]/60 backdrop-blur-[3px]" onClick={() => setSelectedLoan(null)} />
+          <div className="glass-card max-w-sm w-full p-6 animate-slide-up relative z-10 !bg-[#1e293b] border border-white/10 shadow-2xl flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">Loan Details</h3>
+                <p className="text-xs text-slate-400">Requested: {formatDate(selectedLoan.created_at)}</p>
+              </div>
+              <button onClick={() => setSelectedLoan(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Amount</span>
+                <span className="font-bold text-white">{formatCurrency(selectedLoan.amount)}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Purpose</span>
+                <span className="text-white capitalize">{selectedLoan.purpose}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Term</span>
+                <span className="text-white">{selectedLoan.term_months} Months</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Status</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${
+                  selectedLoan.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : 
+                  selectedLoan.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 
+                  'bg-amber-500/20 text-amber-400'
+                }`}>
+                  {selectedLoan.status}
+                </span>
+              </div>
+            </div>
+
+            {selectedLoan.status === 'approved' && (
+              <div className="mt-2">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-slate-400">Repayment Progress</span>
+                  <span className="text-[#818cf8] font-bold">
+                    {Math.min(100, Math.round(((Date.now() - new Date(selectedLoan.created_at).getTime()) / (selectedLoan.term_months * 30 * 24 * 60 * 60 * 1000)) * 100))}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="bg-[#818cf8] h-2 rounded-full" style={{ width: `${Math.min(100, Math.round(((Date.now() - new Date(selectedLoan.created_at).getTime()) / (selectedLoan.term_months * 30 * 24 * 60 * 60 * 1000)) * 100))}%` }}></div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Selected Deposit Modal */}
+      {selectedDeposit && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#0f172a]/60 backdrop-blur-[3px]" onClick={() => setSelectedDeposit(null)} />
+          <div className="glass-card max-w-sm w-full p-6 animate-slide-up relative z-10 !bg-[#1e293b] border border-white/10 shadow-2xl flex flex-col gap-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">Deposit Details</h3>
+                <p className="text-xs text-slate-400">Opened: {formatDate(selectedDeposit.created_at)}</p>
+              </div>
+              <button onClick={() => setSelectedDeposit(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Amount</span>
+                <span className="font-bold text-white">{formatCurrency(selectedDeposit.amount)}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Interest Rate</span>
+                <span className="text-[#34d399]">{selectedDeposit.interest_rate}% APY</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Maturity Date</span>
+                <span className="text-white">{formatDate(selectedDeposit.maturity_date)}</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-slate-400 text-sm">Status</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded capitalize ${
+                  selectedDeposit.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
+                  selectedDeposit.status === 'matured' ? 'bg-indigo-500/20 text-indigo-400' : 
+                  'bg-red-500/20 text-red-400'
+                }`}>
+                  {selectedDeposit.status}
+                </span>
+              </div>
+            </div>
+
+            {selectedDeposit.status === 'active' && (
+              <div className="mt-2">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-slate-400">Term Progress</span>
+                  <span className="text-[#34d399] font-bold">
+                    {Math.min(100, Math.round(((Date.now() - new Date(selectedDeposit.created_at).getTime()) / (new Date(selectedDeposit.maturity_date).getTime() - new Date(selectedDeposit.created_at).getTime())) * 100))}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2 mb-4">
+                  <div className="bg-[#34d399] h-2 rounded-full" style={{ width: `${Math.min(100, Math.round(((Date.now() - new Date(selectedDeposit.created_at).getTime()) / (new Date(selectedDeposit.maturity_date).getTime() - new Date(selectedDeposit.created_at).getTime())) * 100))}%` }}></div>
+                </div>
+                <button 
+                  onClick={() => { setSelectedDeposit(null); handleBreakDeposit(selectedDeposit.id); }}
+                  className="w-full text-red-400 hover:text-red-300 font-semibold border border-red-500/30 bg-red-500/10 py-2 rounded-lg text-sm transition-colors"
+                >
+                  Break Deposit Early
+                </button>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
     </div>
   );
 };

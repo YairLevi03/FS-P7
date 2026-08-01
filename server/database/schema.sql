@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS `standing_orders` (
   `amount` DECIMAL(15, 2) NOT NULL,
   `frequency` ENUM('daily', 'weekly', 'monthly', 'yearly') NOT NULL,
   `next_run_date` DATE NOT NULL,
+  `end_date` DATE NULL,
   `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`source_account_id`) REFERENCES `accounts`(`id`) ON DELETE CASCADE,

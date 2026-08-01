@@ -57,8 +57,17 @@ const CustomerAccounts = () => {
               <div key={acc.id} className="glass-card flex flex-col gap-4 animate-slide-up">
                 {/* Account Details Header */}
                 <div className="flex justify-between items-start border-b border-white/10 pb-4 flex-wrap gap-4">
-                  <div>
-                    <h3 className="capitalize text-xl font-bold text-white mb-1">{acc.account_type} Account</h3>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                      <h3 className="capitalize text-xl font-bold text-white">{acc.account_type} Account</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                        acc.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
+                        acc.status === 'frozen' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                        'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {acc.status}
+                      </span>
+                    </div>
                     <p className="font-mono text-sm text-[#94a3b8]">Account Number: {acc.account_number}</p>
                   </div>
                   <div className="text-right">

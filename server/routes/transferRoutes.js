@@ -10,8 +10,8 @@ router.use(authenticateToken);
 
 router.post('/', [
   body('source_account_id').isInt().withMessage('Source account is required'),
-  body('target_account_id').isInt().withMessage('Target account is required'),
-  body('amount').isNumeric().withMessage('Valid amount is required')
+  body('target_account_number').notEmpty().withMessage('Target account number is required'),
+  body('amount').isNumeric().withMessage('Amount is required')
 ], validateRequest, transferController.doTransfer);
 
 export default router;

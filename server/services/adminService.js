@@ -104,7 +104,7 @@ export const getRecentSecurityAlerts = async () => {
     SELECT a.*, u.username 
     FROM audit_logs a 
     JOIN users u ON a.user_id = u.id 
-    WHERE a.action_type IN ('USER_LOCKED', 'LOGIN_FAILED_LOCKED') 
+    WHERE a.action_type = 'USER_LOCKED'
     ORDER BY a.created_at DESC 
     LIMIT 20
   `);

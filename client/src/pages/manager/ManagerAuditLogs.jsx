@@ -9,6 +9,8 @@ const ManagerAuditLogs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [filterType, setFilterType] = useState('ALL');
+
   useEffect(() => {
     const fetchLogs = async () => {
       try {
@@ -25,6 +27,9 @@ const ManagerAuditLogs = () => {
 
   if (loading) return <div className="h-full flex items-center justify-center py-12"><Loader size="lg" /></div>;
 
+  const uniqueTypes = [...new Set(logs.map(log => log.action_type))].sort();
+  const filteredLogs = filterType === 'ALL' ? logs : logs.filter(log => log.action_type === filterType);
+
   return (
     <div className="animate-fade-in flex flex-col gap-6">
       <div className="flex justify-between items-end">
@@ -37,14 +42,33 @@ const ManagerAuditLogs = () => {
       {error && <div className="alert-error p-4 rounded glass-card">{error}</div>}
 
       <div className="glass-card flex flex-col">
-        <h3 className="flex items-center gap-2 mb-6 text-[#6366f1]">
-          <Activity size={20} /> Security & Action History
-        </h3>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="flex items-center gap-2 text-[#6366f1] mb-0">
+            <Activity size={20} /> Security & Action History
+          </h3>
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-slate-400 font-medium">Filter by Action:</label>
+            <select 
+              className="input-field !py-1.5 !px-3 !bg-[#0f172a] text-sm w-auto"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+            >
+              <option value="ALL">All Actions</option>
+              {uniqueTypes.map(type => (
+                <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {logs.length === 0 ? (
           <div className="text-center py-12 text-[#94a3b8] flex flex-col items-center">
             <ShieldAlert size={48} className="opacity-50 mb-4" />
             <p>No audit logs recorded yet.</p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="text-center py-12 text-[#94a3b8]">
+            <p>No logs match the selected action type.</p>
           </div>
         ) : (
           <div className="table-container overflow-x-auto">
@@ -59,7 +83,7 @@ const ManagerAuditLogs = () => {
                 </tr>
               </thead>
               <tbody>
-                {logs.map(log => (
+                {filteredLogs.map(log => (
                   <tr key={log.id} className="hover:bg-white/5 transition-colors">
                     <td className="text-[#94a3b8] whitespace-nowrap">
                       {new Date(log.created_at).toLocaleString()}

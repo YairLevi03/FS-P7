@@ -37,7 +37,6 @@ export const loginUser = async (username, password, ipAddress) => {
       user = await userModel.findUserByUsername(username);
     } else {
       const remaining = Math.ceil((30000 - timeDiff) / 1000);
-      await auditService.logAction(user.id, 'LOGIN_FAILED_LOCKED', 'Attempt to login to a locked account', ipAddress);
       throw { statusCode: 403, message: `Account is temporarily locked. Try again in ${remaining} seconds.`, remaining };
     }
   }

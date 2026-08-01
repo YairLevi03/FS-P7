@@ -58,6 +58,15 @@ export const depositCheck = async (req, res, next) => {
 
     const checkImagePath = `/uploads/checks/${req.file.filename}`;
 
+    // Verify account ownership and status
+    const [accounts] = await connection.query('SELECT status FROM accounts WHERE id = ? AND user_id = ?', [accountId, req.user.id]);
+    if (accounts.length === 0) {
+      throw { statusCode: 404, message: 'Account not found' };
+    }
+    if (accounts[0].status !== 'active') {
+      throw { statusCode: 403, message: 'Cannot deposit to a non-active account' };
+    }
+
     // Add transaction
     const [result] = await connection.query(
       'INSERT INTO transactions (account_id, type, amount, check_image_path, status, description) VALUES (?, "check_deposit", ?, ?, "completed", "Check Deposit")',

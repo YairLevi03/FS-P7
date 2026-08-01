@@ -7,7 +7,7 @@ export const getLoansByUserId = async (userId) => {
 
 export const getAllPendingLoans = async () => {
   const [rows] = await pool.query(
-    'SELECT l.*, u.full_name, u.email FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = "pending" ORDER BY l.created_at ASC'
+    'SELECT l.*, u.full_name, u.username FROM loans l JOIN users u ON l.user_id = u.id WHERE l.status = "pending" ORDER BY l.created_at ASC'
   );
   return rows;
 };

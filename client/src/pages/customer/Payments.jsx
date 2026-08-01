@@ -17,7 +17,10 @@ const Payments = () => {
     api.get('/accounts').then(res => {
       setAccounts(res.data);
       if(res.data.length > 0) {
-        setFormData(prev => ({...prev, account_id: res.data[0].id}));
+        const activeAccounts = res.data.filter(a => a.status === 'active');
+        if (activeAccounts.length > 0) {
+          setFormData(prev => ({...prev, account_id: activeAccounts[0].id}));
+        }
       }
     }).catch(() => {
       showToast('error', 'Failed to load accounts.');
@@ -85,11 +88,14 @@ const Payments = () => {
               onChange={handleChange} 
               required
             >
-              {accounts.map(acc => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.account_type.toUpperCase()} Account - {acc.account_number} ({formatCurrency(acc.balance, acc.currency)})
-                </option>
-              ))}
+              {accounts.map(acc => {
+                const isDisabled = acc.status !== 'active';
+                return (
+                  <option key={acc.id} value={acc.id} className="bg-[#0f172a] text-white" disabled={isDisabled}>
+                    {acc.account_type.toUpperCase()} Account - {acc.account_number} ({formatCurrency(acc.balance, acc.currency)}) {isDisabled ? `(${acc.status})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

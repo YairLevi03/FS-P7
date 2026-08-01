@@ -6,10 +6,10 @@ export const getStandingOrdersByAccountId = async (accountId) => {
 };
 
 export const createStandingOrder = async (orderData) => {
-  const { source_account_id, target_account_id, amount, frequency, next_run_date } = orderData;
+  const { source_account_id, target_account_id, amount, frequency, next_run_date, end_date } = orderData;
   const [result] = await pool.query(
-    'INSERT INTO standing_orders (source_account_id, target_account_id, amount, frequency, next_run_date) VALUES (?, ?, ?, ?, ?)',
-    [source_account_id, target_account_id || null, amount, frequency, next_run_date]
+    'INSERT INTO standing_orders (source_account_id, target_account_id, amount, frequency, next_run_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
+    [source_account_id, target_account_id || null, amount, frequency, next_run_date, end_date || null]
   );
   return result.insertId;
 };

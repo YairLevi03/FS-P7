@@ -7,7 +7,7 @@ const TransferForm = () => {
   const [accounts, setAccounts] = useState([]);
   const [formData, setFormData] = useState({
     source_account_id: '',
-    target_account_id: '',
+    target_account_number: '',
     amount: '',
     description: ''
   });
@@ -19,7 +19,10 @@ const TransferForm = () => {
     api.get('/accounts').then(res => {
       setAccounts(res.data);
       if(res.data.length > 0) {
-        setFormData(prev => ({...prev, source_account_id: res.data[0].id}));
+        const activeAccounts = res.data.filter(a => a.status === 'active');
+        if (activeAccounts.length > 0) {
+          setFormData(prev => ({...prev, source_account_id: activeAccounts[0].id}));
+        }
       }
     });
   }, []);
@@ -32,7 +35,7 @@ const TransferForm = () => {
     try {
       const res = await api.post('/transfers', formData);
       setSuccess(res.data.message || 'Transfer completed successfully');
-      setFormData({ ...formData, amount: '', description: '', target_account_id: '' });
+      setFormData({ ...formData, amount: '', description: '', target_account_number: '' });
       
       // Refresh accounts
       const accountsRes = await api.get('/accounts');
@@ -71,27 +74,30 @@ const TransferForm = () => {
               onChange={handleChange} 
               required
             >
-              {accounts.map(acc => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.account_type.toUpperCase()} Account - {acc.account_number} ({formatCurrency(acc.balance, acc.currency)})
-                </option>
-              ))}
+              {accounts.map(acc => {
+                const isDisabled = acc.status !== 'active';
+                return (
+                  <option key={acc.id} value={acc.id} className="bg-[#0f172a] text-white" disabled={isDisabled}>
+                    {acc.account_type.toUpperCase()} Account - {acc.account_number} ({formatCurrency(acc.balance, acc.currency)}) {isDisabled ? `(${acc.status})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Recipient Account ID</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Recipient Account Number</label>
             <input 
-              type="number" 
-              name="target_account_id" 
+              type="text" 
+              name="target_account_number" 
               className="input-field" 
-              value={formData.target_account_id} 
+              value={formData.target_account_number} 
               onChange={handleChange} 
               required 
-              placeholder="e.g. 3" 
+              placeholder="e.g. 10000001" 
             />
             <span className="text-xs text-[#94a3b8] mt-1">
-              Enter the recipient's internal account ID to send funds.
+              Enter the recipient's account number to send funds.
             </span>
           </div>
 

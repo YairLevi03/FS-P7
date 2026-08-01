@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import Loader from '../../components/common/Loader';
-import { Upload, Search, Download, Filter, FileText } from 'lucide-react';
+import { Upload, Search, Download, Filter } from 'lucide-react';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -46,8 +46,9 @@ const Transactions = () => {
     try {
       const response = await api.get('/accounts');
       setAccounts(response.data);
-      if (response.data.length > 0) {
-        setDepositAccountId(response.data[0].id);
+      const activeAccounts = response.data.filter(a => a.status === 'active');
+      if (activeAccounts.length > 0) {
+        setDepositAccountId(activeAccounts[0].id);
       }
     } catch (err) {
       console.error(err);
@@ -103,9 +104,28 @@ const Transactions = () => {
     }
   };
 
-  const handleExport = (format) => {
-    // Simulate export
-    alert(`Exporting transaction history to ${format}...`);
+  const handleExport = () => {
+    if (transactions.length === 0) return;
+    const headers = ['Date', 'Account', 'Type', 'Description', 'Amount', 'Status'];
+    const rows = transactions.map(tx => {
+      const desc = (tx.payee_name || tx.description || '').replace(/"/g, '""');
+      return [
+        formatDate(tx.created_at),
+        tx.account_number,
+        tx.type,
+        `"${desc}"`,
+        tx.type === 'deposit' || tx.type === 'check_deposit' ? tx.amount : `-${tx.amount}`,
+        tx.status
+      ].join(',');
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(',') + '\n' + rows.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'transactions_history.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -133,11 +153,14 @@ const Transactions = () => {
                 onChange={(e) => setDepositAccountId(e.target.value)}
                 required
               >
-                {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id} className="bg-[#0f172a] text-white">
-                    {acc.account_type} - {acc.account_number} ({formatCurrency(acc.balance)})
-                  </option>
-                ))}
+                {accounts.map(acc => {
+                  const isDisabled = acc.status !== 'active';
+                  return (
+                    <option key={acc.id} value={acc.id} className="bg-[#0f172a] text-white" disabled={isDisabled}>
+                      {acc.account_type} - {acc.account_number} ({formatCurrency(acc.balance)}) {isDisabled ? `(${acc.status})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             
@@ -183,8 +206,7 @@ const Transactions = () => {
           <div className="flex justify-between items-center mb-4">
             <h3 className="flex items-center gap-2 text-[#818cf8]"><Filter size={20} /> Transaction History</h3>
             <div className="flex gap-2">
-              <button onClick={() => handleExport('PDF')} className="btn-secondary text-sm px-3 py-1.5"><FileText size={16} /> PDF</button>
-              <button onClick={() => handleExport('Excel')} className="btn-secondary text-sm px-3 py-1.5"><Download size={16} /> Excel</button>
+              <button onClick={handleExport} className="btn-secondary text-sm px-3 py-1.5"><Download size={16} /> Export to Excel</button>
             </div>
           </div>
 
@@ -230,8 +252,8 @@ const Transactions = () => {
                         <td>{tx.account_number}</td>
                         <td className="capitalize">{tx.type.replace('_', ' ')}</td>
                         <td>{tx.payee_name || tx.description}</td>
-                        <td className={`font-semibold ${tx.type === 'deposit' || tx.type === 'check_deposit' || (tx.type === 'transfer' && tx.related_account_id) ? 'text-[#34d399]' : 'text-white'}`}>
-                          {tx.type === 'deposit' || tx.type === 'check_deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        <td className={`font-semibold ${Number(tx.amount) > 0 ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
+                          {Number(tx.amount) > 0 ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
                         </td>
                         <td>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
