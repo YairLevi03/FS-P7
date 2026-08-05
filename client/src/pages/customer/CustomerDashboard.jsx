@@ -8,18 +8,23 @@ import { Link } from 'react-router-dom';
 const CustomerDashboard = () => {
   const [accounts, setAccounts] = useState([]);
   const [standingOrders, setStandingOrders] = useState([]);
+  const [exchangeRates, setExchangeRates] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [accountsRes, ordersRes] = await Promise.all([
+        const [accountsRes, ordersRes, ratesRes] = await Promise.all([
           api.get('/accounts'),
-          api.get('/standing-orders')
+          api.get('/standing-orders'),
+          fetch('https://api.exchangerate-api.com/v4/latest/ILS').then(res => res.json()).catch(() => null)
         ]);
         setAccounts(accountsRes.data);
         setStandingOrders(ordersRes.data);
+        if (ratesRes && ratesRes.rates) {
+          setExchangeRates(ratesRes.rates);
+        }
       } catch (err) {
         setError('Failed to load dashboard data.');
       } finally {
@@ -43,7 +48,7 @@ const CustomerDashboard = () => {
       <section>
         <h2 className="mb-4 text-2xl font-extrabold text-white tracking-tight">Financial Overview</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* Total Balance Card */}
           <div className="glass-card flex flex-col justify-between">
             <div className="flex justify-between items-start mb-2">
@@ -75,6 +80,36 @@ const CustomerDashboard = () => {
                 </Link>
              </div>
           </div>
+
+          {/* Exchange Rates Card */}
+           <div className="glass-card flex flex-col justify-center">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-muted uppercase tracking-wider font-semibold text-xs">Exchange Rates</span>
+                <div className="p-2 rounded bg-emerald-500/10 text-emerald-400">
+                  <Activity size={20} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 mt-2">
+                {exchangeRates ? (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-300">1 USD =</span>
+                      <span className="font-bold text-[#34d399]">{(1 / exchangeRates.USD).toFixed(2)} ₪</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-300">1 EUR =</span>
+                      <span className="font-bold text-[#34d399]">{(1 / exchangeRates.EUR).toFixed(2)} ₪</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-300">1 GBP =</span>
+                      <span className="font-bold text-[#34d399]">{(1 / exchangeRates.GBP).toFixed(2)} ₪</span>
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-xs text-slate-500">Loading live rates...</span>
+                )}
+              </div>
+           </div>
 
           {/* Alerts Panel Card */}
           <div className="glass-card flex flex-col">
@@ -129,10 +164,10 @@ const CustomerDashboard = () => {
                     <div className="w-10 h-10 rounded-full bg-[#0f172a] flex items-center justify-center text-[#818cf8]">
                       <Activity size={20} />
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded capitalize font-semibold ${
-                      account.status === 'active' 
-                        ? 'bg-[rgba(16, 185, 129, 0.1)] text-[#34d399]' 
-                        : 'bg-[rgba(239, 68, 68, 0.1)] text-[#f87171]'
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                      account.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 
+                      account.status === 'frozen' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                      'bg-red-500/20 text-red-400 border border-red-500/30'
                     }`}>
                       {account.status}
                     </span>

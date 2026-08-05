@@ -77,6 +77,13 @@ export const resolveTransaction = async (transactionId, decision) => {
       // similar logic for payments...
     }
 
+    // If decision is completed, also mark the related transaction as completed
+    if (decision === 'completed') {
+      if (transaction.type === 'transfer' && transaction.amount < 0) {
+        await connection.query('UPDATE transactions SET status = "completed" WHERE related_account_id = ? AND account_id = ? AND status = "pending"', [transaction.account_id, transaction.related_account_id]);
+      }
+    }
+
     await connection.query('UPDATE transactions SET status = ? WHERE id = ?', [decision, transactionId]);
 
     await connection.commit();

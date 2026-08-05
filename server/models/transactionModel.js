@@ -41,7 +41,12 @@ export const createTransaction = async (connection, transactionData) => {
 };
 
 export const getPendingTransactions = async () => {
-  const [rows] = await pool.query('SELECT * FROM transactions WHERE status = "pending" ORDER BY created_at DESC');
+  const [rows] = await pool.query(`
+    SELECT * FROM transactions 
+    WHERE status = "pending" 
+    AND (type != 'transfer' OR (type = 'transfer' AND amount < 0))
+    ORDER BY created_at DESC
+  `);
   return rows;
 };
 
