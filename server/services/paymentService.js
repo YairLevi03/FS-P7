@@ -24,8 +24,10 @@ export const executePayment = async (userId, paymentData) => {
 
     const status = amount > 50000 ? 'pending' : 'completed';
 
-    // Deduct from account
-    await updateAccountBalance(connection, account_id, -amount);
+    // If completed, deduct from account now. If pending, wait for manager.
+    if (status === 'completed') {
+      await updateAccountBalance(connection, account_id, -amount);
+    }
 
     // Record Payment
     await createPayment(connection, {

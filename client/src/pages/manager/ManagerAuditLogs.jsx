@@ -79,7 +79,6 @@ const ManagerAuditLogs = () => {
                   <th>Action Type</th>
                   <th>User / Admin ID</th>
                   <th>Description</th>
-                  <th>IP Address</th>
                 </tr>
               </thead>
               <tbody>
@@ -104,9 +103,6 @@ const ManagerAuditLogs = () => {
                     </td>
                     <td className="text-slate-300">
                       {log.description}
-                    </td>
-                    <td className="font-mono text-slate-500">
-                      {log.ip_address || 'N/A'}
                     </td>
                   </tr>
                 ))}

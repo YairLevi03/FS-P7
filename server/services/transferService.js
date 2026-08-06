@@ -40,10 +40,13 @@ export const executeTransfer = async (userId, transferData) => {
     const status = amount > 50000 ? 'pending' : 'completed';
     const target_account_id = targetAccount.id;
 
-    // Deduct from source
-    await updateAccountBalance(connection, source_account_id, -amount);
-    // Add to target
-    await updateAccountBalance(connection, target_account_id, amount);
+    // If completed, update balances now. If pending, wait for manager.
+    if (status === 'completed') {
+      // Deduct from source
+      await updateAccountBalance(connection, source_account_id, -amount);
+      // Add to target
+      await updateAccountBalance(connection, target_account_id, amount);
+    }
 
     // Create transactions
     await createTransaction(connection, {

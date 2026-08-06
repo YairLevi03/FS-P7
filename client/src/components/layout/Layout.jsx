@@ -11,14 +11,14 @@ const Layout = () => {
   const toggleSidebar = () => setMobileMenuOpen(!mobileMenuOpen);
 
   return (
-    <div className="flex min-h-screen bg-[#334155] bg-grid text-slate-200">
+    <div className="flex h-screen w-full bg-[#334155] bg-grid text-slate-200 overflow-hidden">
       {/* Sidebar (Desktop sticky & Mobile off-canvas) */}
       <Sidebar isOpen={mobileMenuOpen} toggleSidebar={toggleSidebar} />
 
       {/* Main Page Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
         {/* Top Header */}
-        <header className="h-20 bg-[#1e293b]/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30">
+        <header className="h-20 bg-[#1e293b]/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30 flex-shrink-0">
           {/* Hamburger button for mobile */}
           <button 
             className="md:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"

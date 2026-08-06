@@ -21,11 +21,11 @@ export const getTransactions = async (req, res, next) => {
       params.push(endDate);
     }
     if (minAmount) {
-      query += ' AND t.amount >= ?';
+      query += ' AND ABS(t.amount) >= ?';
       params.push(minAmount);
     }
     if (maxAmount) {
-      query += ' AND t.amount <= ?';
+      query += ' AND ABS(t.amount) <= ?';
       params.push(maxAmount);
     }
     if (type) {
@@ -67,14 +67,19 @@ export const depositCheck = async (req, res, next) => {
       throw { statusCode: 403, message: 'Cannot deposit to a non-active account' };
     }
 
+    const isHighValue = amount > 50000;
+    const status = isHighValue ? 'pending' : 'completed';
+
     // Add transaction
     const [result] = await connection.query(
-      'INSERT INTO transactions (account_id, type, amount, check_image_path, status, description) VALUES (?, "check_deposit", ?, ?, "completed", "Check Deposit")',
-      [accountId, amount, checkImagePath]
+      'INSERT INTO transactions (account_id, type, amount, check_image_path, status, description) VALUES (?, "check_deposit", ?, ?, ?, "Check Deposit")',
+      [accountId, amount, checkImagePath, status]
     );
 
-    // Update balance
-    await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, accountId]);
+    // Update balance if not pending
+    if (!isHighValue) {
+      await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [amount, accountId]);
+    }
 
     // Save to uploads
     await connection.query(

@@ -17,9 +17,9 @@ import LoansSavings from '../pages/customer/LoansSavings';
 
 // Manager Pages
 import ManagerDashboard from '../pages/manager/ManagerDashboard';
+import ManagerApprovals from '../pages/manager/ManagerApprovals';
 import ManagerCustomers from '../pages/manager/ManagerCustomers';
 import ManagerAccounts from '../pages/manager/ManagerAccounts';
-import ManagerReports from '../pages/manager/ManagerReports';
 import ManagerAuditLogs from '../pages/manager/ManagerAuditLogs';
 
 const AppRoutes = () => {
@@ -47,9 +47,9 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
         <Route element={<Layout />}>
           <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+          <Route path="/manager/approvals" element={<ManagerApprovals />} />
           <Route path="/manager/customers" element={<ManagerCustomers />} />
           <Route path="/manager/accounts" element={<ManagerAccounts />} />
-          <Route path="/manager/reports" element={<ManagerReports />} />
           <Route path="/manager/audit" element={<ManagerAuditLogs />} />
         </Route>
       </Route>

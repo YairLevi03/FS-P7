@@ -14,13 +14,13 @@ const LoginPage = () => {
 
   // Load stored lockout timer on mount
   useEffect(() => {
-    const storedLockUntil = localStorage.getItem('lockUntil');
+    const storedLockUntil = sessionStorage.getItem('lockUntil');
     if (storedLockUntil) {
       const remaining = Math.ceil((Number(storedLockUntil) - Date.now()) / 1000);
       if (remaining > 0) {
         setCountdown(remaining);
       } else {
-        localStorage.removeItem('lockUntil');
+        sessionStorage.removeItem('lockUntil');
       }
     }
   }, []);
@@ -29,14 +29,14 @@ const LoginPage = () => {
   useEffect(() => {
     if (countdown > 0) {
       const timer = setInterval(() => {
-        const storedLockUntil = localStorage.getItem('lockUntil');
+        const storedLockUntil = sessionStorage.getItem('lockUntil');
         if (storedLockUntil) {
           const remaining = Math.ceil((Number(storedLockUntil) - Date.now()) / 1000);
           if (remaining > 0) {
             setCountdown(remaining);
           } else {
             setCountdown(0);
-            localStorage.removeItem('lockUntil');
+            sessionStorage.removeItem('lockUntil');
             setError(''); // clear lockout error when time expires
           }
         } else {
@@ -62,7 +62,7 @@ const LoginPage = () => {
       const remaining = err.response?.data?.remaining;
       if (remaining) {
         const lockUntil = Date.now() + remaining * 1000;
-        localStorage.setItem('lockUntil', lockUntil);
+        sessionStorage.setItem('lockUntil', lockUntil);
         setCountdown(remaining);
       }
       setError(err.response?.data?.message || 'Failed to login');

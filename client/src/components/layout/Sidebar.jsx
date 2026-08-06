@@ -12,7 +12,8 @@ import {
   Building,
   X,
   Landmark,
-  ShieldAlert
+  ShieldAlert,
+  CheckCircle
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -37,9 +38,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const managerLinks = [
     { to: '/manager/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { to: '/manager/approvals', icon: <CheckCircle size={20} />, label: 'Approvals' },
     { to: '/manager/customers', icon: <Users size={20} />, label: 'Client Directory' },
     { to: '/manager/accounts', icon: <Building size={20} />, label: 'All Accounts' },
-    { to: '/manager/reports', icon: <FileText size={20} />, label: 'Reports' },
     { to: '/manager/audit', icon: <ShieldAlert size={20} />, label: 'System Audit' },
   ];
 

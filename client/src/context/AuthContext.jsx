@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (token) {
         try {
           // Decode token to check expiration
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const response = await api.post('/auth/login', { username, password });
     const { token, user } = response.data;
-    localStorage.setItem('token', token);
+    sessionStorage.setItem('token', token);
     setUser(user);
     return user;
   };
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     setUser(null);
   };
 

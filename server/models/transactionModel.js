@@ -17,11 +17,11 @@ export const getTransactionsByAccountId = async (accountId, filters = {}) => {
     params.push(filters.to + ' 23:59:59'); // include full day
   }
   if (filters.minAmount) {
-    query += ' AND amount >= ?';
+    query += ' AND ABS(amount) >= ?';
     params.push(filters.minAmount);
   }
   if (filters.maxAmount) {
-    query += ' AND amount <= ?';
+    query += ' AND ABS(amount) <= ?';
     params.push(filters.maxAmount);
   }
 

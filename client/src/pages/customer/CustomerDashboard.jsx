@@ -9,22 +9,31 @@ const CustomerDashboard = () => {
   const [accounts, setAccounts] = useState([]);
   const [standingOrders, setStandingOrders] = useState([]);
   const [exchangeRates, setExchangeRates] = useState(null);
+  const [recentAlerts, setRecentAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [accountsRes, ordersRes, ratesRes] = await Promise.all([
+        const [accountsRes, ordersRes, ratesRes, txsRes] = await Promise.all([
           api.get('/accounts'),
           api.get('/standing-orders'),
-          fetch('https://api.exchangerate-api.com/v4/latest/ILS').then(res => res.json()).catch(() => null)
+          fetch('https://api.exchangerate-api.com/v4/latest/ILS').then(res => res.json()).catch(() => null),
+          api.get('/transactions')
         ]);
         setAccounts(accountsRes.data);
         setStandingOrders(ordersRes.data);
         if (ratesRes && ratesRes.rates) {
           setExchangeRates(ratesRes.rates);
         }
+        
+        // Filter high value resolved transactions for alerts
+        const highValueAlerts = txsRes.data
+          .filter(tx => Math.abs(tx.amount) > 50000 && (tx.status === 'completed' || tx.status === 'rejected'))
+          .slice(0, 3);
+        setRecentAlerts(highValueAlerts);
+
       } catch (err) {
         setError('Failed to load dashboard data.');
       } finally {
@@ -117,7 +126,7 @@ const CustomerDashboard = () => {
                <Activity size={18} className="text-amber-400 animate-pulse" /> System Alerts
              </p>
              <div className="flex flex-col gap-3 overflow-y-auto max-h-[150px] pr-2 custom-scrollbar">
-                {!accounts.some(acc => acc.balance < 1000) && activeOrders.length === 0 && (
+                {!accounts.some(acc => acc.balance < 1000) && activeOrders.length === 0 && recentAlerts.length === 0 && (
                   <p className="text-xs text-slate-500 text-center py-6">No critical alerts or upcoming standing orders.</p>
                 )}
                 {accounts.some(acc => acc.balance < 1000) && (
@@ -129,6 +138,21 @@ const CustomerDashboard = () => {
                     </div>
                   </div>
                 )}
+                
+                {recentAlerts.map(alert => (
+                  <div key={alert.id} className={`p-3 border rounded-lg flex items-start gap-3 animate-fade-in ${alert.status === 'completed' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${alert.status === 'completed' ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                    <div>
+                      <p className={`text-sm font-semibold mb-0.5 ${alert.status === 'completed' ? 'text-emerald-400' : 'text-red-400'}`}>
+                        High Value {alert.type === 'transfer' ? 'Transfer' : 'Payment'} {alert.status === 'completed' ? 'Approved' : 'Rejected'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Manager {alert.status} your {alert.type} of {formatCurrency(Math.abs(alert.amount))}.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
                 {activeOrders.map(order => (
                   <div key={order.id} className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg flex items-start gap-3 animate-fade-in">
                     <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></div>

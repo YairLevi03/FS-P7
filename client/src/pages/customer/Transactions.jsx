@@ -256,7 +256,7 @@ const Transactions = () => {
                           {Number(tx.amount) > 0 ? '+' : '-'}{formatCurrency(Math.abs(tx.amount))}
                         </td>
                         <td>
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${tx.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : tx.status === 'rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
                             {tx.status}
                           </span>
                         </td>

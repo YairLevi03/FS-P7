@@ -11,6 +11,7 @@ const LoansSavings = () => {
   const [deposits, setDeposits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [accounts, setAccounts] = useState([]);
   const { showAlert, showConfirm } = useModal();
 
   const [selectedLoan, setSelectedLoan] = useState(null);
@@ -26,16 +27,23 @@ const LoansSavings = () => {
   const [depositAmount, setDepositAmount] = useState('');
   const [depositTerm, setDepositTerm] = useState('6');
   const [depositLoading, setDepositLoading] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [loansRes, depositsRes] = await Promise.all([
+      const [loansRes, depositsRes, accountsRes] = await Promise.all([
         api.get('/loans/my-loans'),
-        api.get('/deposits/my-deposits')
+        api.get('/deposits/my-deposits'),
+        api.get('/accounts')
       ]);
       setLoans(loansRes.data);
       setDeposits(depositsRes.data);
+      setAccounts(accountsRes.data);
+      const activeAccount = accountsRes.data.find(acc => acc.status === 'active');
+      if (activeAccount) {
+        setSelectedAccountId(activeAccount.id);
+      }
     } catch (err) {
       setError('Failed to load loans and savings.');
     } finally {
@@ -67,7 +75,11 @@ const LoansSavings = () => {
     e.preventDefault();
     setDepositLoading(true);
     try {
-      await api.post('/deposits/open', { amount: depositAmount, termMonths: depositTerm });
+      await api.post('/deposits/open', { 
+        amount: depositAmount, 
+        termMonths: depositTerm,
+        accountId: selectedAccountId
+      });
       setDepositAmount('');
       fetchData();
       await showAlert('Success', 'Savings deposit opened successfully.');
@@ -225,6 +237,26 @@ const LoansSavings = () => {
                   />
                 </div>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Funding Account</label>
+                <select 
+                  className="input-field" 
+                  value={selectedAccountId} 
+                  onChange={(e) => setSelectedAccountId(e.target.value)}
+                  required
+                >
+                  {accounts.map(acc => {
+                    const isDisabled = acc.status !== 'active';
+                    return (
+                      <option key={acc.id} value={acc.id} className="bg-[#0f172a] text-white" disabled={isDisabled}>
+                        {acc.account_type.toUpperCase()} Account - {acc.account_number} ({formatCurrency(acc.balance, acc.currency)}) {isDisabled ? `(${acc.status})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Term</label>
                 <select className="input-field" value={depositTerm} onChange={(e) => setDepositTerm(e.target.value)}>

@@ -60,27 +60,57 @@ export const resolveTransaction = async (transactionId, decision) => {
       throw { statusCode: 400, message: 'Transaction not found or not pending.' };
     }
 
-    // If approved, it was already deducted? In our simplified logic, pending transactions deduct money initially, 
-    // but if rejected, we should refund.
     if (decision === 'rejected') {
-      // Refund the source account
       if (transaction.type === 'transfer' && transaction.amount < 0) {
-        await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [Math.abs(transaction.amount), transaction.account_id]);
-        
-        // Also update the related incoming transaction to rejected
+        // Just update the related incoming transaction to rejected
         await connection.query('UPDATE transactions SET status = "rejected" WHERE related_account_id = ? AND account_id = ? AND status = "pending"', [transaction.account_id, transaction.related_account_id]);
-        // Also deduct from target since it wasn't supposed to get it
-        if(transaction.related_account_id) {
-           await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [Math.abs(transaction.amount), transaction.related_account_id]);
-        }
       }
-      // similar logic for payments...
     }
 
-    // If decision is completed, also mark the related transaction as completed
     if (decision === 'completed') {
       if (transaction.type === 'transfer' && transaction.amount < 0) {
+        // Execute the transfer now!
+        const [sourceAccountRes] = await connection.query('SELECT balance FROM accounts WHERE id = ? FOR UPDATE', [transaction.account_id]);
+        if (sourceAccountRes[0].balance < Math.abs(transaction.amount)) {
+            throw { statusCode: 400, message: "Source account no longer has sufficient funds for this transfer." };
+        }
+        
+        await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [Math.abs(transaction.amount), transaction.account_id]);
+        await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [Math.abs(transaction.amount), transaction.related_account_id]);
+        
+        // Update the related incoming transaction to completed
         await connection.query('UPDATE transactions SET status = "completed" WHERE related_account_id = ? AND account_id = ? AND status = "pending"', [transaction.account_id, transaction.related_account_id]);
+      } else if (transaction.type === 'payment' && transaction.amount < 0) {
+        // Execute the payment now!
+        const [sourceAccountRes] = await connection.query('SELECT balance FROM accounts WHERE id = ? FOR UPDATE', [transaction.account_id]);
+        if (sourceAccountRes[0].balance < Math.abs(transaction.amount)) {
+            throw { statusCode: 400, message: "Account no longer has sufficient funds for this payment." };
+        }
+        await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [Math.abs(transaction.amount), transaction.account_id]);
+      } else if (transaction.type === 'check_deposit') {
+        // Execute the check deposit now!
+        await connection.query('UPDATE accounts SET balance = balance + ? WHERE id = ?', [Math.abs(transaction.amount), transaction.account_id]);
+      } else if (transaction.type === 'deposit_opening') {
+        // Check balance
+        const [sourceAccountRes] = await connection.query('SELECT user_id, balance FROM accounts WHERE id = ? FOR UPDATE', [transaction.account_id]);
+        if (sourceAccountRes[0].balance < Math.abs(transaction.amount)) {
+            throw { statusCode: 400, message: "Account no longer has sufficient funds for this deposit." };
+        }
+        
+        // Deduct balance
+        await connection.query('UPDATE accounts SET balance = balance - ? WHERE id = ?', [Math.abs(transaction.amount), transaction.account_id]);
+        
+        // Create deposit
+        const termMonths = transaction.related_account_id;
+        const interestRate = termMonths >= 12 ? 4.0 : 2.5;
+        const maturityDate = new Date();
+        maturityDate.setMonth(maturityDate.getMonth() + parseInt(termMonths, 10));
+        const formattedMaturityDate = maturityDate.toISOString().split('T')[0];
+        
+        await connection.query(
+          'INSERT INTO deposits (user_id, amount, interest_rate, maturity_date) VALUES (?, ?, ?, ?)',
+          [sourceAccountRes[0].user_id, Math.abs(transaction.amount), interestRate, formattedMaturityDate]
+        );
       }
     }
 
